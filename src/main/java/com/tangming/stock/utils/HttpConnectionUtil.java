@@ -1,152 +1,193 @@
 package com.tangming.stock.utils;
 
-import com.tangming.stock.domain.Stock;
+import java.io.*;
+import java.net.*;
+import java.util.Iterator;
+import java.util.Map;
 
-import java.io.BufferedReader;
-import java.io.DataOutputStream;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.net.URLEncoder;
-
-/**
- * HTTP连接工具类
- *
- * @author : 唐明
- * @date : Created in 10:16 2017/8/28
- * @modified By:
- */
 public class HttpConnectionUtil {
 
-    private static final String GET_URL = "http://hq.sinajs.cn/";
+    // post请求
+    public static final String HTTP_POST = "POST";
 
-    private static final String POST_URL = "http://www.cngolon.com/request.action";
+    // get请求
+    private static final String HTTP_GET = "GET";
 
+    // utf-8字符编码
+    private static final String CHARSET_UTF_8 = "utf-8";
 
-    public static void main(String[] args) throws IOException {
-        HttpConnectionUtil.readContentFromGet("sh601006");
+    //gbk编码格式
+    private static final String CHARSET_GBK = "GBK";
 
+    // HTTP内容类型。如果未指定ContentType，默认为TEXT/HTML
+    public static final String CONTENT_TYPE_TEXT_HTML = "text/xml";
+
+    // HTTP内容类型。相当于form表单的形式，提交暑假
+    private static final String CONTENT_TYPE_FORM_URL = "application/x-www-form-urlencoded";
+
+    // 请求超时时间
+    private static final int SEND_REQUEST_TIME_OUT = 50000;
+
+    // 将读超时时间
+    private static final int READ_TIME_OUT = 50000;
+
+    /**
+     * @param requestType 请求类型
+     * @param urlStr      请求地址
+     * @param body        请求发送内容
+     * @return 返回内容
+     */
+    public static String requestMethod(String requestType, String urlStr, String body,String charset) {
+
+        // 是否有http正文提交
+        boolean isDoInput = false;
+        if (body != null && body.length() > 0)
+            isDoInput = true;
+        OutputStream outputStream = null;
+        OutputStreamWriter outputStreamWriter = null;
+        InputStream inputStream = null;
+        InputStreamReader inputStreamReader = null;
+        BufferedReader reader = null;
+        StringBuilder resultBuilder = new StringBuilder();
+        String tempLine = null;
+        try {
+            // 统一资源
+            URL url = new URL(urlStr);
+            // 连接类的父类，抽象类
+            URLConnection urlConnection = url.openConnection();
+            // http的连接类
+            HttpURLConnection httpURLConnection = (HttpURLConnection) urlConnection;
+
+            // 设置是否向httpUrlConnection输出，因为这个是post请求，参数要放在
+            // http正文内，因此需要设为true, 默认情况下是false;
+            if (isDoInput) {
+                httpURLConnection.setDoOutput(true);
+                httpURLConnection.setRequestProperty("Content-Length", String.valueOf(body.length()));
+            }
+            // 设置是否从httpUrlConnection读入，默认情况下是true;
+            httpURLConnection.setDoInput(true);
+            // 设置一个指定的超时值（以毫秒为单位）
+            httpURLConnection.setConnectTimeout(SEND_REQUEST_TIME_OUT);
+            // 将读超时设置为指定的超时，以毫秒为单位。
+            httpURLConnection.setReadTimeout(READ_TIME_OUT);
+            // Post 请求不能使用缓存
+            httpURLConnection.setUseCaches(false);
+            // 设置字符编码
+            httpURLConnection.setRequestProperty("Accept-Charset", CHARSET_UTF_8);
+            // 设置内容类型
+            httpURLConnection.setRequestProperty("Content-Type", CONTENT_TYPE_FORM_URL);
+            // 设定请求的方法，默认是GET
+            httpURLConnection.setRequestMethod(requestType);
+
+            // 打开到此 URL 引用的资源的通信链接（如果尚未建立这样的连接）。
+            // 如果在已打开连接（此时 connected 字段的值为 true）的情况下调用 connect 方法，则忽略该调用。
+            httpURLConnection.connect();
+
+            if (isDoInput) {
+                outputStream = httpURLConnection.getOutputStream();
+                outputStreamWriter = new OutputStreamWriter(outputStream);
+                outputStreamWriter.write(body);
+                outputStreamWriter.flush();// 刷新
+            }
+            if (httpURLConnection.getResponseCode() >= 300) {
+                throw new Exception(
+                        "HTTP Request is not success, Response code is " + httpURLConnection.getResponseCode());
+            }
+
+            if (httpURLConnection.getResponseCode() == HttpURLConnection.HTTP_OK) {
+                inputStream = httpURLConnection.getInputStream();
+                //此处设置返回的数据编码格式。
+                inputStreamReader = new InputStreamReader(inputStream,charset);
+                reader = new BufferedReader(inputStreamReader);
+
+                while ((tempLine = reader.readLine()) != null) {
+                    resultBuilder.append(tempLine);
+                    resultBuilder.append("\n");
+                }
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {// 关闭流
+
+            try {
+                if (outputStreamWriter != null) {
+                    outputStreamWriter.close();
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            try {
+                if (outputStream != null) {
+                    outputStream.close();
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            try {
+                if (reader != null) {
+                    reader.close();
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            try {
+                if (inputStreamReader != null) {
+                    inputStreamReader.close();
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            try {
+                if (inputStream != null) {
+                    inputStream.close();
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+
+        return resultBuilder.toString();
     }
 
     /**
-     * 读取get()请求的数据
+     * 将map集合的键值对转化成：key1=value1&key2=value2 的形式
      *
-     * @param stockID 股票代码
-     * @return Stock 返回Stock实例
-     * @throws IOException
+     * @param parameterMap 需要转化的键值对集合
+     * @return 字符串
      */
-    public static Stock readContentFromGet(String stockID) throws IOException {
-        // 拼凑get请求的URL字串，使用URLEncoder.encode对特殊和不可见字符进行编码
-        String getURL = GET_URL + "list=" + URLEncoder.encode(stockID, "GBK");
-        URL getUrl = new URL(getURL);
-        // 根据拼凑的URL，打开连接，URL.openConnection函数会根据URL的类型，
-        // 返回不同的URLConnection子类的对象，这里URL是一个http，因此实际返回的是HttpURLConnection
-        HttpURLConnection connection = (HttpURLConnection) getUrl
-                .openConnection();
-        // 进行连接，但是实际上get request要在下一句的connection.getInputStream()函数中才会真正发到
-        // 服务器
-        connection.connect();
-        // 取得输入流，并使用Reader读取
-        BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream(), "GBK"));
-        //设置编码,否则中文乱码
-        String lines;
-        StringBuilder stringBuilder = new StringBuilder();
-        while ((lines = reader.readLine()) != null) {
-            lines = new String(lines.getBytes(), "utf-8");
-            stringBuilder.append(lines);
+    public static String convertStringParamter(Map parameterMap) {
+        StringBuilder parameterBuilder = new StringBuilder();
+        if (parameterMap != null) {
+            Iterator iterator = parameterMap.keySet().iterator();
+            String key = null;
+            String value = null;
+            while (iterator.hasNext()) {
+                key = (String) iterator.next();
+                if (parameterMap.get(key) != null) {
+                    value = (String) parameterMap.get(key);
+                } else {
+                    value = "";
+                }
+                parameterBuilder.append(key).append("=").append(value);
+                if (iterator.hasNext()) {
+                    parameterBuilder.append("&");
+                }
+            }
         }
-        lines = stringBuilder.toString();
-        System.out.println(lines);//TODO: 测试打印
-        //截取双引号内的字符串
-        lines = lines.substring(lines.indexOf("\"") + 1, lines.lastIndexOf("\""));
-        System.out.println(lines);//TODO: 测试打印
-        String[] subLines = lines.split(",");
-        Stock stock = new Stock(subLines[0], subLines[1], subLines[2], subLines[3], subLines[4], subLines[5],
-                subLines[6], subLines[7], subLines[8], subLines[9], subLines[10], subLines[11], subLines[12],
-                subLines[13], subLines[14], subLines[15], subLines[16], subLines[17], subLines[18], subLines[19],
-                subLines[20], subLines[21], subLines[22], subLines[23], subLines[24], subLines[25], subLines[26],
-                subLines[27], subLines[28], subLines[29], subLines[30], subLines[31]);
-        reader.close();
-        // 断开连接
-        connection.disconnect();
-        return stock;
+        return parameterBuilder.toString();
     }
 
-
     /**
-     * post()请求
+     * 测试main方法
      *
-     * @throws IOException
+     * @param args
+     * @throws MalformedURLException
      */
-    public static void readContentFromPost() throws IOException {
-        // Post请求的url，与get不同的是不需要带参数
-        URL postUrl = new URL(POST_URL);
-        // 打开连接
-        HttpURLConnection connection = (HttpURLConnection) postUrl
-                .openConnection();
-        // Output to the connection. Default is
-        // false, set to true because post
-        // method must write something to the
-        // connection
-        // 设置是否向connection输出，因为这个是post请求，参数要放在
-        // http正文内，因此需要设为true
-        connection.setDoOutput(true);
-        // Read from the connection. Default is true.
-        connection.setDoInput(true);
-        // Set the post method. Default is GET
-        connection.setRequestMethod("POST");
-        // Post cannot use caches
-        // Post 请求不能使用缓存
-        connection.setUseCaches(false);
-        // This method takes effects to
-        // every instances of this class.
-        // URLConnection.setFollowRedirects是static函数，作用于所有的URLConnection对象。
-        // connection.setFollowRedirects(true);
+    public static void main(String[] args) throws MalformedURLException {
 
-        // This methods only
-        // takes effacts to this
-        // instance.
-        // URLConnection.setInstanceFollowRedirects是成员函数，仅作用于当前函数
-        connection.setInstanceFollowRedirects(true);
-        // Set the content type to urlencoded,
-        // because we will write
-        // some URL-encoded content to the
-        // connection. Settings above must be set before connect!
-        // 配置本次连接的Content-type，配置为application/x-www-form-urlencoded的
-        // 意思是正文是urlencoded编码过的form参数，下面我们可以看到我们对正文内容使用URLEncoder.encode
-        // 进行编码
-        connection.setRequestProperty("Content-Type",
-                "application/x-www-form-urlencoded");
-        // 连接，从postUrl.openConnection()至此的配置必须要在connect之前完成，
-        // 要注意的是connection.getOutputStream会隐含的进行connect。
-        connection.connect();
-        DataOutputStream out = new DataOutputStream(connection
-                .getOutputStream());
-        // The URL-encoded contend
-        // 正文，正文内容其实跟get的URL中'?'后的参数字符串一致
-        String content = "key=j0r53nmbbd78x7m1pqml06u2&type=1&toemail=cngolon@gmail.com" + "&activatecode=" +
-                URLEncoder.encode("中国聚龙", "utf-8");
-        // DataOutputStream.writeBytes将字符串中的16位的unicode字符以8位的字符形式写道流里面
-        out.writeBytes(content);
-        out.flush();
-        out.close(); // flush and close
-        BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream(), "utf-8"));
-        //设置编码,否则中文乱码
-        String line = "";
-        System.out.println("=============================");
-        System.out.println("Contents of post request");
-        System.out.println("=============================");
-        while ((line = reader.readLine()) != null) {
-            //line = new String(line.getBytes(), "utf-8");
-            System.out.println(line);
-        }
-        System.out.println("=============================");
-        System.out.println("Contents of post request ends");
-        System.out.println("=============================");
-        reader.close();
-        connection.disconnect();
+        System.out.println(requestMethod(HTTP_GET, "http://hq.sinajs.cn/list=sh600728",null,"GBK"));
+        System.out.println(requestMethod(HTTP_GET, "http://q.stock.sohu.com/hisHq?code=cn_600728&start=20170828&end=20170828",null,"UTF-8"));
+
     }
 }
-
-

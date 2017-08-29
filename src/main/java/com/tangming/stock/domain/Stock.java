@@ -1,6 +1,7 @@
 package com.tangming.stock.domain;
 
 import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 
 /**
@@ -13,7 +14,9 @@ import javax.persistence.Id;
 @Entity
 public class Stock {
     @Id
-    private String id;
+    @GeneratedValue
+    private Integer id;
+    private String code;//股票代码
     private String stockName; //股票名称
     private String openingPri; //今日开盘价
     private String yesterdayClosingPri;//昨日收盘价
@@ -53,19 +56,14 @@ public class Stock {
 
     }
 
-    public Stock(String stockName, String openingPri) {
-        this.stockName = stockName;
-        this.openingPri = openingPri;
-
-    }
-
-    public Stock(String stockName, String openingPri, String yesterdayClosingPri, String currentPri, String
+    public Stock(String code, String stockName, String openingPri, String yesterdayClosingPri, String currentPri, String
             dayHighPri, String dayLowPri, String competitivePri, String reservePri, String transNum, String turnover,
                  String buyOneNum, String buyOnePri, String buyTwoNum, String buyTwoPri, String buyThreeNum, String
                          buyThreePri, String buyFourNum, String buyFourPri, String buyFiveNum, String buyFivePri,
                  String sellOneNum, String sellOnePri, String sellTwoNum, String sellTwoPri, String sellThreeNum,
                  String sellThreePri, String sellFourNum, String sellFourPri, String sellFiveNum, String sellFivePri,
                  String date, String time) {
+        this.code = code;
         this.stockName = stockName;
         this.openingPri = openingPri;
         this.yesterdayClosingPri = yesterdayClosingPri;
@@ -101,14 +99,60 @@ public class Stock {
     }
 
 
+    @Override
+    public String toString() {
+        return "Stock{" +
+                "id=" + id +
+                ", code='" + code + '\'' +
+                ", stockName='" + stockName + '\'' +
+                ", openingPri='" + openingPri + '\'' +
+                ", yesterdayClosingPri='" + yesterdayClosingPri + '\'' +
+                ", currentPri='" + currentPri + '\'' +
+                ", dayHighPri='" + dayHighPri + '\'' +
+                ", dayLowPri='" + dayLowPri + '\'' +
+                ", competitivePri='" + competitivePri + '\'' +
+                ", reservePri='" + reservePri + '\'' +
+                ", transNum='" + transNum + '\'' +
+                ", turnover='" + turnover + '\'' +
+                ", buyOneNum='" + buyOneNum + '\'' +
+                ", buyOnePri='" + buyOnePri + '\'' +
+                ", buyTwoNum='" + buyTwoNum + '\'' +
+                ", buyTwoPri='" + buyTwoPri + '\'' +
+                ", buyThreeNum='" + buyThreeNum + '\'' +
+                ", buyThreePri='" + buyThreePri + '\'' +
+                ", buyFourNum='" + buyFourNum + '\'' +
+                ", buyFourPri='" + buyFourPri + '\'' +
+                ", buyFiveNum='" + buyFiveNum + '\'' +
+                ", buyFivePri='" + buyFivePri + '\'' +
+                ", sellOneNum='" + sellOneNum + '\'' +
+                ", sellOnePri='" + sellOnePri + '\'' +
+                ", sellTwoNum='" + sellTwoNum + '\'' +
+                ", sellTwoPri='" + sellTwoPri + '\'' +
+                ", sellThreeNum='" + sellThreeNum + '\'' +
+                ", sellThreePri='" + sellThreePri + '\'' +
+                ", sellFourNum='" + sellFourNum + '\'' +
+                ", sellFourPri='" + sellFourPri + '\'' +
+                ", sellFiveNum='" + sellFiveNum + '\'' +
+                ", sellFivePri='" + sellFivePri + '\'' +
+                ", date='" + date + '\'' +
+                ", time='" + time + '\'' +
+                '}';
+    }
 
-
-    public String getId() {
+    public Integer getId() {
         return id;
     }
 
-    public void setId(String id) {
+    public void setId(Integer id) {
         this.id = id;
+    }
+
+    public String getCode() {
+        return code;
+    }
+
+    public void setCode(String code) {
+        this.code = code;
     }
 
     public String getStockName() {
