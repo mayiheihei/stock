@@ -66,7 +66,8 @@ public class MyHttpConnectionUtil {
         lines = lines.substring(lines.indexOf("\"") + 1, lines.lastIndexOf("\""));
         System.out.println(lines);//TODO: 测试打印
         String[] subLines = lines.split(",");
-        Stock stock = new Stock(subLines[0], subLines[1], subLines[2], subLines[3], subLines[4], subLines[5],
+        stockID = stockID.substring(2);
+        Stock stock = new Stock(stockID,subLines[0], subLines[1], subLines[2], subLines[3], subLines[4], subLines[5],
                 subLines[6], subLines[7], subLines[8], subLines[9], subLines[10], subLines[11], subLines[12],
                 subLines[13], subLines[14], subLines[15], subLines[16], subLines[17], subLines[18], subLines[19],
                 subLines[20], subLines[21], subLines[22], subLines[23], subLines[24], subLines[25], subLines[26],

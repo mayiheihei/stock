@@ -11,7 +11,8 @@ import javax.persistence.Entity;
  */
 @Entity
 public class StockHis {
-private String code;
+    //TODO: 完成该实体类
+    private String code;
     private String date; //日期
     private String openingPri; //该日期开盘价
     private String closeingPri;//该日期收盘价
